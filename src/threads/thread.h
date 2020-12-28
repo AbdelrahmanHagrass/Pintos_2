@@ -5,6 +5,7 @@
 #include <list.h>
 #include <stdint.h>
 #include <threads/fixed-point.h>
+#include <threads/synch.h>
 
 /* States in a thread's life cycle. */
 enum thread_status
@@ -94,14 +95,37 @@ struct thread
    /* Shared between thread.c and synch.c.*/
    struct list_elem elem; /* List element. */
 
-#ifdef USERPROG
+
+  
+//#ifdef USERPROG
    /* Owned by userprog/process.c. */
    uint32_t *pagedir; /* Page directory. */
-#endif
+//#endif
    uint64_t wakeupTime;
    /* Owned by thread.c. */
+
+
+    bool success;
+    
+    int exit_error;
+
+    struct list child_Process_List;
+    struct thread* parent;
+
+    struct file *ExecFile;
+    struct list files;
+    int fd_count;
+
+    struct semaphore child_sema;
+    int Waiting_on;
    unsigned magic; /* Detects stack overflow. */
 };
+struct child {
+      int tid;
+      struct list_elem elem;
+      int exit_error;
+      bool finished;
+    };
 
 /* If false (default), use round-robin scheduler.
    If true, use multi-level feedback queue scheduler.
@@ -151,4 +175,8 @@ bool thread_wakeupTimeComp(const struct list_elem *,
                            void *);
 /*in Descending Order*/
 bool thread_PriorityComp(const struct list_elem *, const struct list_elem *, void *);
+/* Making lock on the file*/
+void acquire_filesys_lock(void);
+/*releasing the Lock */
+void release_filesys_lock(void);
 #endif /* threads/thread.h */
