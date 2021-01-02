@@ -203,12 +203,8 @@ void* check_addr(const void *vaddr)
 }
 void get_args_1(struct intr_frame *f, int choose, void *args)
 {
-  
-
-    int argv = *((int*) args);
-   
+    int argv = *((int*) args);  
     args += 4;
-  
     if (choose == SYS_EXIT)
     {
         exit(argv);
@@ -283,20 +279,32 @@ void get_args_3 (struct intr_frame *f, int choose, void *args)
     }
     else f->eax = read (argv,(void *) argv_1, (unsigned) argv_2);
 }
+bool check_validate(void *addr)
+{
+  if (!is_user_vaddr(addr))
+	{
+		return false;
+	
+	}
+	void *ptr = pagedir_get_page(thread_current()->pagedir, addr);
+	if (ptr==NULL)
+	{
+		return false;
+		
+	}
+	return true;
+}
 
 static void
 syscall_handler (struct intr_frame *f UNUSED) 
 {
   struct intr_frame *temp=f;
     int syscall_number = 0;
-    int * p = f->esp;
-  	check_addr(p);
-    
     void *args = f -> esp;
     args+=4; 
      check_addr((const void*) args);
     syscall_number = *(int*)temp->esp;
-     
+     int *p;
     switch(syscall_number)
     {
     case SYS_HALT:                  	/* Halt the operating system. */
@@ -308,8 +316,19 @@ syscall_handler (struct intr_frame *f UNUSED)
         break;
     case SYS_EXEC:                   /* Start another process. */
 		 
-	  	check_addr(*(p+4));
-        get_args_1(f, SYS_EXEC,args);
+        p = f->esp;
+         
+  
+    if(!check_validate(p+2))
+    {
+        exit(-1);
+    }
+
+    check_addr(p+1);
+		check_addr(*(p+1));
+       // if(!check_validate(*p)&&check_validate())
+		f->eax = exec_process(*(p+1));
+       // get_args_1(f, SYS_EXEC,args);
         break;
     case SYS_WAIT:                   /* Wait for a child process to die. */
    
